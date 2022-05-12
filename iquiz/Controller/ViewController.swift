@@ -29,6 +29,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     
     private func setUpTableView() {
         quizTableViewPlaceHolder.delegate = self
+        quizTableViewPlaceHolder.dataSource = self
         let quizTableViewNib = UINib(nibName: "itemQuizTableViewCell", bundle: nil)
         quizTableViewPlaceHolder.register(quizTableViewNib, forCellReuseIdentifier: "itemQuizTableViewCell")
     }
@@ -42,6 +43,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         cell.iconImageView.image = UIImage(named: images[indexPath.row])
         cell.titleLabel.text = subjects[indexPath.row]
         cell.descriptionLabel.text = descriptions[indexPath.row]
+        cell.iconImageView.layer.cornerRadius = 5.0
         return cell
     }
     
@@ -49,15 +51,19 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         return TABLE_ROW_HEIGHT
     }
     
-    func tableView(_ tableView: UITableView, willSelectRowAt indexPath: IndexPath) -> IndexPath? {
-        return nil
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        if let questionVC = storyboard?.instantiateViewController(withIdentifier: "questionVC") as? QuestionViewController {
+            questionVC.quizTitle = subjects[indexPath.row]
+            questionVC.correctNum = 0
+            self.navigationController?.pushViewController(questionVC, animated: true)
+        }
     }
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setUpTableView()
+        self.navigationItem.hidesBackButton = true
     }
-
 
 }
 
