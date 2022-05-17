@@ -8,6 +8,8 @@
 import UIKit
 
 class AnswerViewController: UIViewController {
+    var quizData : [Quizs] = []
+    var indexPathRow = 0
     var subject = ""
     var question = ""
     var answer = ""
@@ -34,9 +36,10 @@ class AnswerViewController: UIViewController {
         } else {
             if let questionVC = storyboard?.instantiateViewController(withIdentifier: "questionVC") as? QuestionViewController {
                 questionVC.questionNum = currentQuestionNum + 1
-                questionVC.quizTitle = subject
+                questionVC.indexPathRow = self.indexPathRow
                 questionVC.answerSelected = -1
                 questionVC.correctNum = correctAns
+                questionVC.quizData = self.quizData
                 self.navigationController?.pushViewController(questionVC, animated: true)
             }
         }
@@ -53,7 +56,6 @@ class AnswerViewController: UIViewController {
         questionLabel.text = question
         answerLabel.text = answer
         messageLabel.text = message
-        print(correctAns)
     }
     
     /*
