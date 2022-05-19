@@ -4,15 +4,16 @@
 //
 //  Created by Wensi Xu on 5/15/22.
 //
-
+import Foundation
 import UIKit
+import os.log
 
 protocol settingActionTeller {
     func fetchData(_ sender: Any)
     func getURL(_ url: String)
 }
 
-class SettingViewController: UIViewController {
+class SettingViewController: UIViewController, UITextFieldDelegate {
     var delegate: settingActionTeller?
     @IBOutlet weak var urlLabel: UITextField!
     @IBAction func fetchData(_ sender: Any) {
@@ -28,16 +29,41 @@ class SettingViewController: UIViewController {
                 NSLog("The completion handler fired")
             })
         }
+        
+        let archivePath = NSHomeDirectory() + "/Documents/scores.archive"
+        let nsScores = url!
+        do {
+            try nsScores.write(toFile: archivePath, atomically: true, encoding: .utf8)
+        } catch {
+            print("error writing url to file")
+        }
+   
         self.delegate?.getURL(url!)
         self.delegate?.fetchData(sender)
         self.dismiss(animated: true)
         
     }
     
+    private func textFieldShouldReturn(textField: UITextField) -> Bool {
+            textField.resignFirstResponder()
+            return true
+        }
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        self.view.endEditing(true)
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        // Do any additional setup after loading the view.
+        urlLabel.delegate = self
+        let archiveURL = URL(fileURLWithPath: NSHomeDirectory() + "/Documents/scores.archive")
+        do {
+            let readUrl = try String(contentsOf: archiveURL)
+            urlLabel.text = readUrl
+        } catch {
+            print("error reading URL")
+        }
+        
     }
 
     /*

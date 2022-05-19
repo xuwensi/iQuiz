@@ -9,17 +9,48 @@ import Network
 import UIKit
 
 class ViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, settingActionTeller {
+    final let TABLE_ROW_HEIGHT = 80.0
+    var quizs : [Quizs] = []
+    let images : [String] = ["math", "marvel", "science"]
     let initialUrl = "https://tednewardsandbox.site44.com/questions.json"
     let monitor = NWPathMonitor()
     var fetchedURL = ""
+    var networkConnected = "true"
+    
+    lazy var refreshControl: UIRefreshControl = {
+            let refreshControl = UIRefreshControl()
+            refreshControl.addTarget(self, action:
+                         #selector(ViewController.handleRefresh(_:)),
+                                     for: UIControl.Event.valueChanged)
+            refreshControl.tintColor = UIColor.tintColor
+            
+            return refreshControl
+        }()
+    @objc func handleRefresh(_ refreshControl: UIRefreshControl) {
+            self.quizTableViewPlaceHolder.reloadData()
+            if networkConnected == "false" {
+                let alert = UIAlertController(title: "Network Alert", message: "Network Disconnected: Loading Local Data", preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "OK",
+                                              style: .default,
+                                              handler: { _ in
+                    NSLog("\"OK\" pressed.")
+                }))
+                self.present(alert, animated: true, completion: {
+                    NSLog("network alert fired")
+                })
+            }
+            refreshControl.endRefreshing()
+        }
+    
     func getURL(_ url: String) {
         fetchedURL = url
+        
     }
-    
     func fetchData(_ sender: Any) {
         monitor.pathUpdateHandler = { path in
             if path.status == .satisfied {
                 print("Connected")
+
                 self.fetchQuiz(self.fetchedURL)
             } else {
                 print("Disconnected")
@@ -39,9 +70,6 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         monitor.cancel()
     }
     
-    final let TABLE_ROW_HEIGHT = 80.0
-    var quizs : [Quizs] = []
-    let images : [String] = ["math", "marvel", "science"]
     
     @IBOutlet weak var quizTableViewPlaceHolder: UITableView!
     
@@ -97,10 +125,21 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     }
     
     private func fetchQuiz(_ inputURL: String) {
+        
         let url = URL(string: inputURL)!
         let task = URLSession.shared.dataTask(with: url) { data, response, error in
+            
             guard error == nil else {
-                print("error: \(error!)")
+                print("Cannot parse data")
+                let alert = UIAlertController(title: "Network Alert", message: "Network Disconnected", preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "OK",
+                                              style: .default,
+                                              handler: { _ in
+                    NSLog("\"OK\" pressed.")
+                }))
+                self.present(alert, animated: true, completion: {
+                    NSLog("network alert fired")
+                })
                 return
             }
             
@@ -116,7 +155,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
                     self.quizTableViewPlaceHolder.reloadData()
                 }
             } else {
-                print("Cannot parse data")
+                NSLog("Failed to fetch data")
                 return
             }
             
@@ -125,30 +164,30 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         task.resume()
     }
     
+    
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        self.quizTableViewPlaceHolder.addSubview(self.refreshControl)
+
         monitor.pathUpdateHandler = { path in
-            if path.status != .satisfied {
-                let alert = UIAlertController(title: "Network Alert", message: "Network Disconnected: Loading Local Data", preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "OK",
-                                              style: .default,
-                                              handler: { _ in
-                    NSLog("\"OK\" pressed.")
-                }))
-                self.present(alert, animated: true, completion: {
-                    NSLog("network alert fired")
-                })
+            if path.status == .satisfied {
+                self.fetchQuiz(self.initialUrl)
+                self.networkConnected = "true"
+            } else {
+                self.networkConnected = "false"
                 if let localData = self.readLocalJson(forName: "questions") {
                     self.quizs = try! JSONDecoder().decode([Quizs].self, from: localData)
                 }
-            } else {
-                self.fetchQuiz(self.initialUrl)
+                self.setUpTableView()
+                print("disconnected")
             }
         }
         let queue = DispatchQueue(label: "Monitor")
         monitor.start(queue: queue)
         monitor.cancel()
-
+        
+        
 //        setUpTableView()
         self.navigationItem.hidesBackButton = true
     }
